@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { fetchCsvData } = require('./fetchCsvData');  // Import the CSV fetching function
 const path = require('path');
 const fs = require('fs');
@@ -13,13 +14,14 @@ function joinWithAnd(array) {
 
 const updateTemplateWithData = async () => {
     // Published Google Sheets CSV URL
-    const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSL3lDUE-G8n0dAtcsW3awJUUNqvJ9m8XTrqPDZpfcA9t4KoJqzWFvMgPd6Bvr5nDgJ4TSujwIKxFbi/pub?output=csv';
+    const sheetURL = process.env.SHEET_URL;
+    const certificateYear = process.env.CERTIFICATE_YEAR;
 
     try {
         // Get the current directory of the script
         const currentDir = __dirname;
-        const templateDir = path.join(currentDir, '../template');
-        const certificateDir = path.join(currentDir, '../certificates');
+        const templateDir = path.join(currentDir, `../template/${certificateYear}`);
+        const certificateDir = path.join(currentDir, `../certificates/${certificateYear}`);
         // Create directory if needed
         if (!fs.existsSync(certificateDir)) {
             fs.mkdirSync(certificateDir);
