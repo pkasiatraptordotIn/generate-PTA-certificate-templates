@@ -14,17 +14,14 @@ function joinWithAnd(array) {
 
 const updateTemplateWithData = async () => {
     // Published Google Sheets CSV URL
-    const sheetURLParticipants = process.env.SHEET_URL_PARTICIPANTS;
-    const sheetURLWinners = process.env.SHEET_URL_WINNERS;
+    const sheetURL = process.env.SHEET_URL;
     const certificateYear = process.env.CERTIFICATE_YEAR;
-    const groupCertificateOfParticipationIntoOne = process.env.GROUP_CERTIFICATE_OF_PARTICIPATION_INTO_ONE === 'true';
-    console.log('Group Certificate Of Participation into one certificate:', groupCertificateOfParticipationIntoOne);
 
     try {
         // Get the current directory of the script
         const currentDir = __dirname;
-        const templateDir = path.join(currentDir, `../template/${certificateYear}`);
-        const certificateDir = path.join(currentDir, `../certificates/${certificateYear}`);
+        const templateDir = path.join(currentDir, `../../template/${certificateYear}`);
+        const certificateDir = path.join(currentDir, `../../certificates/${certificateYear}`);
         // Create directory if needed
         if (!fs.existsSync(certificateDir)) {
             fs.mkdirSync(certificateDir);
@@ -35,12 +32,9 @@ const updateTemplateWithData = async () => {
         const templatePath = path.resolve(templateDir, 'template.docx');
 
         // Fetch CSV data
-        const jsonDataParticipants = await fetchCsvData(sheetURLParticipants);
-        const jsonDataWinners = await fetchCsvData(sheetURLWinners);
-        console.log('Fetched Data Count Participants:', jsonDataParticipants.length);
-        console.log('Fetched Data Count Winners:', jsonDataWinners.length);
+        const jsonData = await fetchCsvData(sheetURL);
+        console.log('Fetched Data Count:', jsonData.length);
 
-        const jsonData = [...jsonDataWinners, ...jsonDataParticipants];
         // userhash for merging data
         const userMap = new Map();
 
@@ -54,46 +48,32 @@ const updateTemplateWithData = async () => {
                 linebreaks: true,
             });
 
-            const fullName = `${data.fullName}`;
+            const fullName = `${data.firstName} ${data.lastName}`;
             const formattedFullName = fullName.replace(/\s+/g, '-');
-
-            if (data.awardType == "Participating in ") {
-                data.awardType = "";
-            }
 
             // use Map for optimzation
             let participationArray = []
-            if (groupCertificateOfParticipationIntoOne) {
-                if (userMap.has(formattedFullName)) {
-                    const userData = userMap.get(formattedFullName);
-                    participationArray = userData.participation
-                }
-                if (!data.awardType && participationArray.indexOf(data.artCategory) === -1) {
-                    participationArray.push(data.artCategory);
-                }
-                userMap.set(formattedFullName, { participation: participationArray });
-            } else {
-                 if (!data.awardType && participationArray.indexOf(data.artCategory) === -1) {
-                    participationArray.push(data.artCategory);
-                }
+            if (userMap.has(formattedFullName)) {
+                const userData = userMap.get(formattedFullName);
+                participationArray = userData.participation
             }
+            if (!data.awardType && participationArray.indexOf(data.artCategory) === -1) {
+                participationArray.push(data.artCategory);
+            }
+            userMap.set(formattedFullName, { participation: participationArray });
+
 
             const artcategoryAndAward = data.awardType ?
                 `${data.awardType} in ${data.artCategory}` :
                 `Certificate of Participation in ${joinWithAnd(participationArray)}`;
             let formattedGrade = "";
             switch (data.grade) {
-                case "K":
-                case "Kindergarten":{
+                case "K": {
                     formattedGrade = "Kindergarten"
                     break;
                 }
                 case "PK": {
                     formattedGrade = "Pre-Kindergarten"
-                    break;
-                }
-                case "TK": {
-                    formattedGrade = "Transitional Kindergarten"
                     break;
                 }
                 default: {
@@ -104,8 +84,7 @@ const updateTemplateWithData = async () => {
             const dataForTemplate = {
                 name: fullName,
                 grade: formattedGrade,
-                artcategoryandaward: artcategoryAndAward,
-                schoolname: data.school
+                artcategoryandaward: artcategoryAndAward
             };  // Adjust based on the structure of your data
 
             // Replace placeholders with data
@@ -115,13 +94,9 @@ const updateTemplateWithData = async () => {
             const outputBuffer = doc.getZip().generate({ type: 'nodebuffer' });
 
             // Save the new document
-            let participationOrAward = data.awardType ? data.artCategory.replace(/\s+/g, '-') : 'participating';
-            if (participationOrAward === 'participating' && !groupCertificateOfParticipationIntoOne) {
-                participationOrAward += `-${data.artCategory.replace(/\s+/g, '-')}`;
-            }
+            const participationOrAward = data.awardType ? data.artCategory.replace(/\s+/g, '-') : 'participating';
             const fileNameToSave = `${formattedFullName}-${participationOrAward}.docx`;
             const outputPath = path.resolve(certificateDir, fileNameToSave);
-
             if (fs.existsSync(outputPath)) {
                 console.log('       File already exists:', outputPath);
             }
