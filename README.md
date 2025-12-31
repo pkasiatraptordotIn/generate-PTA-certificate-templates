@@ -99,6 +99,10 @@ This script fetches CSV data from the `sheetURL` using Axios API.
 The script is currently written to match the specific columns and rows in the Google Sheet.\
 If your sheet structure changes, update the `selectedData` configuration accordingly.
 
+<img width="600" alt="01-winners-format_v1" src="https://github.com/user-attachments/assets/626bd160-d5a2-4c5b-8bc9-981c09cc8446" />
+<img width="600" alt="02-participants-format_v1" src="https://github.com/user-attachments/assets/21e3c874-925e-4c88-9ae4-47bec54ec52d" />
+
+
 ### How the Script Works (Conceptually)
 
 Think of the CSV as an array of rows, where each row is converted into an object using column names as keys.
